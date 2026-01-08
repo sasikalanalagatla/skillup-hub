@@ -28,12 +28,10 @@ public class Resume {
 
     private String s3Key;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String textExtracted;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String parsedJson;
 
     private Instant uploadAt = Instant.now();

@@ -32,20 +32,16 @@ public class JobPosting {
 
     private String location;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String requiredSkills;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String preferredSkills;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String rawHtml;
 
     private Instant fetchedAt = Instant.now();

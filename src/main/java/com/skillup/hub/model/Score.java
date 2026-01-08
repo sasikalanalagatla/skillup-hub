@@ -41,8 +41,7 @@ public class Score {
 
     private String engineVersion;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String details;
 
     private Instant createdAt = Instant.now();

@@ -29,8 +29,7 @@ public class Resource {
 
     private String url;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String skillsTags;
 
     private String location;

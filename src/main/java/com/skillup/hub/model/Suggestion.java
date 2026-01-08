@@ -26,13 +26,11 @@ public class Suggestion {
 
     private String category; // skills | experience | format | other
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String message;
 
     private String priority; // high | medium | low
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String remediationSteps;
 }

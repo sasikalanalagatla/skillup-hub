@@ -26,8 +26,7 @@ public class ResumeSection {
 
     private String sectionType;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     private Integer startLine;

@@ -27,8 +27,7 @@ public class Activity {
 
     private String action;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String metadata;
 
     private Instant createdAt = Instant.now();

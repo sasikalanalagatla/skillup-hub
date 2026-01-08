@@ -32,8 +32,7 @@ public class JobTarget {
 
     private String url;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String rawText;
 
     private Instant fetchedAt = Instant.now();

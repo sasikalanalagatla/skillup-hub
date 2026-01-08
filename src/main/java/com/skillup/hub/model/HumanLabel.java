@@ -35,8 +35,7 @@ public class HumanLabel {
 
     private Double score;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String notes;
 
     private Instant createdAt = Instant.now();

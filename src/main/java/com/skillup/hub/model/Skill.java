@@ -26,8 +26,7 @@ public class Skill {
 
     private String canonicalLabel;
 
-    @Lob
-    @Column(columnDefinition = "text")
+    @Column(columnDefinition = "TEXT")
     private String synonyms;
 
     private Instant createdAt = Instant.now();
