@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Details - SkillUp Hub</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #333;
+            font-size: 1.1rem;
+        }
+        .extracted-text {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .badge-private {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+        .badge-public {
+            background: #55efc4;
+            color: #00b894;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+        
+        <div class="header">
+            <h1>📄 Resume Details</h1>
+        </div>
+
+        <div class="card">
+            <h2>Resume Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Filename</div>
+                    <div class="info-value" th:text="${resume.filename}">resume.pdf</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Upload Date</div>
+                    <div class="info-value" th:text="${#temporals.format(resume.uploadAt, 'MMM dd, yyyy HH:mm')}">Jan 1, 2024</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Privacy Level</div>
+                    <div class="info-value">
+                        <span class="badge" th:classappend="${resume.privacyLevel == 'private' ? 'badge-private' : 'badge-public'}" 
+                              th:text="${#strings.capitalize(resume.privacyLevel)}">Private</span>
+                    </div>
+                </div>
+                <div class="info-item" th:if="${resume.user != null}">
+                    <div class="info-label">User Email</div>
+                    <div class="info-value" th:text="${resume.user.email}">user@example.com</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="#" class="btn btn-primary">🎯 Analyze with Job Target</a>
+                <a href="#" class="btn btn-primary">📊 View Scores</a>
+                <form th:action="@{/resume/{id}/delete(id=${resume.id})}" method="post" style="display: inline;" 
+                      onsubmit="return confirm('Are you sure you want to delete this resume?');">
+                    <button type="submit" class="btn btn-danger">🗑️ Delete Resume</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Extracted Text</h2>
+            <div class="extracted-text" th:text="${resume.textExtracted != null ? resume.textExtracted : 'No text extracted'}">
+                Loading extracted text...
+            </div>
+        </div>
+
+        <div class="card" th:if="${resume.parsedJson != null}">
+            <h2>Parsed Data (JSON)</h2>
+            <div class="extracted-text" th:text="${resume.parsedJson}">
+                {}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
