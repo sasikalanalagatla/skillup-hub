@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
@@ -20,11 +20,19 @@ public class ScoreController {
     @PostMapping("/resume/{resumeId}/score")
     public String scoreResume(
             @PathVariable String resumeId,
+            @RequestParam(value = "jobTitle", required = false) String jobTitle,
+            @RequestParam(value = "jobUrl", required = false) String jobUrl,
             RedirectAttributes redirectAttributes) {
 
         try {
-            // Score without job target (general scoring)
-            Score score = scoreService.scoreResume(UUID.fromString(resumeId), null);
+            String jobInfo = jobTitle != null ? jobTitle : jobUrl;
+            if (jobInfo == null || jobInfo.trim().isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Please provide a job title or URL");
+                return "redirect:/resume/" + resumeId;
+            }
+
+            // Score against job info
+            Score score = scoreService.scoreResume(UUID.fromString(resumeId), null, jobInfo);
 
             redirectAttributes.addFlashAttribute("message",
                     "Resume scored! Overall: " + String.format("%.1f", score.getOverallScore()) + "/100");

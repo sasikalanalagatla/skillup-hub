@@ -174,6 +174,80 @@
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         transition: width 0.5s ease;
       }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+      }
+      .modal.show {
+        display: block;
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+      .modal-header {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .close:hover,
+      .close:focus {
+        color: #000;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #333;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+      }
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+      .btn-cancel {
+        background: #e9ecef;
+        color: #333;
+      }
+      .btn-cancel:hover {
+        background: #dee2e6;
+      }
     </style>
   </head>
   <body>
@@ -318,15 +392,13 @@
         <h2>Resume Information</h2>
 
         <div class="actions">
-          <form
-            th:action="@{/resume/{id}/score(id=${resume.id})}"
-            method="post"
-            style="display: inline"
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openJobModal()"
           >
-            <button type="submit" class="btn btn-primary">
-              🎯 Score This Resume
-            </button>
-          </form>
+            🎯 Score Against Job
+          </button>
           <a href="#" class="btn btn-primary">📋 View Suggestions</a>
           <form
             th:action="@{/resume/{id}/delete(id=${resume.id})}"
@@ -355,6 +427,72 @@
         <h2>Parsed Data (JSON)</h2>
         <div class="extracted-text" th:text="${resume.parsedJson}">{}</div>
       </div>
+
+      <!-- Job Modal -->
+      <div id="jobModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeJobModal()">&times;</span>
+          <div class="modal-header">🎯 Score Against Job</div>
+          <form
+            th:action="@{/resume/{id}/score(id=${resume.id})}"
+            method="post"
+          >
+            <div class="form-group">
+              <label for="jobTitle">Job Title</label>
+              <input
+                type="text"
+                id="jobTitle"
+                name="jobTitle"
+                placeholder="e.g., Senior Java Developer, React Engineer"
+              />
+            </div>
+            <div style="text-align: center; color: #999; margin: 15px 0">
+              OR
+            </div>
+            <div class="form-group">
+              <label for="jobUrl">Job URL</label>
+              <input
+                type="url"
+                id="jobUrl"
+                name="jobUrl"
+                placeholder="https://example.com/jobs/123"
+              />
+            </div>
+            <p style="color: #999; font-size: 0.9rem; margin-bottom: 20px">
+              At least one field is required
+            </p>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn btn-cancel"
+                onclick="closeJobModal()"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Score Resume
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <script>
+        function openJobModal() {
+          document.getElementById("jobModal").classList.add("show");
+        }
+
+        function closeJobModal() {
+          document.getElementById("jobModal").classList.remove("show");
+        }
+
+        window.onclick = function (event) {
+          const modal = document.getElementById("jobModal");
+          if (event.target === modal) {
+            modal.classList.remove("show");
+          }
+        };
+      </script>
     </div>
   </body>
 </html>

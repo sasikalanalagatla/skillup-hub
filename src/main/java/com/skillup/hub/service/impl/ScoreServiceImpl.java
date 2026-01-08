@@ -33,7 +33,7 @@ public class ScoreServiceImpl implements ScoreService {
             "junit", "testing", "tdd", "maven", "gradle");
 
     @Override
-    public Score scoreResume(UUID resumeId, UUID jobTargetId) {
+    public Score scoreResume(UUID resumeId, UUID jobTargetId, String jobInfo) {
         Resume resume = resumeService.getResumeById(resumeId);
         String resumeText = resume.getTextExtracted();
 
@@ -42,7 +42,7 @@ public class ScoreServiceImpl implements ScoreService {
         }
 
         // Calculate individual scores
-        double skillsScore = calculateSkillsScore(resumeText);
+        double skillsScore = calculateSkillsScore(resumeText, jobInfo);
         double experienceScore = calculateExperienceScore(resumeText);
         double keywordsScore = calculateKeywordsScore(resumeText);
         double formattingScore = calculateFormattingScore(resumeText);
@@ -55,6 +55,7 @@ public class ScoreServiceImpl implements ScoreService {
 
         // Build details JSON
         Map<String, Object> detailsMap = new HashMap<>();
+        detailsMap.put("jobInfo", jobInfo);
         detailsMap.put("skillsBreakdown", analyzeSkills(resumeText));
         detailsMap.put("experienceYears", extractExperienceYears(resumeText));
         detailsMap.put("sectionsFound", identifySections(resumeText));
@@ -88,15 +89,31 @@ public class ScoreServiceImpl implements ScoreService {
                 .orElse(null);
     }
 
-    // Skills scoring: percentage of common tech skills found
-    private double calculateSkillsScore(String text) {
-        String lowerText = text.toLowerCase();
+    // Skills scoring: match with job info, percentage of common tech skills found
+    private double calculateSkillsScore(String resumeText, String jobInfo) {
+        String lowerText = resumeText.toLowerCase();
+        String lowerJob = jobInfo != null ? jobInfo.toLowerCase() : "";
+
         long foundSkills = TECH_SKILLS.stream()
-                .filter(lowerText::contains)
+                .filter(skill -> lowerText.contains(skill) || lowerJob.contains(skill))
                 .count();
+
+        // Bonus if skills match job title
+        int matchingSkills = 0;
+        if (lowerJob.contains("java"))
+            matchingSkills += lowerText.contains("java") ? 5 : 0;
+        if (lowerJob.contains("python"))
+            matchingSkills += lowerText.contains("python") ? 5 : 0;
+        if (lowerJob.contains("react"))
+            matchingSkills += lowerText.contains("react") ? 5 : 0;
+        if (lowerJob.contains("spring"))
+            matchingSkills += lowerText.contains("spring") ? 5 : 0;
+        if (lowerJob.contains("aws"))
+            matchingSkills += lowerText.contains("aws") ? 5 : 0;
 
         // Score based on number of skills found
         double rawScore = (foundSkills / 10.0) * 100; // 10+ skills = 100%
+        rawScore += matchingSkills; // Add bonus for matching job skills
         return Math.min(rawScore, 100.0);
     }
 

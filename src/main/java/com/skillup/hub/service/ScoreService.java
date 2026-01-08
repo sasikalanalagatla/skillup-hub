@@ -5,7 +5,7 @@ import com.skillup.hub.model.Score;
 import java.util.UUID;
 
 public interface ScoreService {
-    Score scoreResume(UUID resumeId, UUID jobTargetId);
+    Score scoreResume(UUID resumeId, UUID jobTargetId, String jobInfo);
 
     Score getScoreById(UUID scoreId);
 
