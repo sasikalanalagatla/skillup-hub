@@ -22,10 +22,13 @@ public class ScoreController {
             @PathVariable String resumeId,
             @RequestParam(value = "jobTitle", required = false) String jobTitle,
             @RequestParam(value = "jobUrl", required = false) String jobUrl,
+            @RequestParam(value = "jobDescription", required = false) String jobDescription,
             RedirectAttributes redirectAttributes) {
 
         try {
-            String jobInfo = jobTitle != null ? jobTitle : jobUrl;
+            String jobInfo = (jobDescription != null && !jobDescription.trim().isEmpty())
+                    ? jobDescription
+                    : (jobTitle != null ? jobTitle : jobUrl);
             if (jobInfo == null || jobInfo.trim().isEmpty()) {
                 redirectAttributes.addFlashAttribute("error", "Please provide a job title or URL");
                 return "redirect:/resume/" + resumeId;

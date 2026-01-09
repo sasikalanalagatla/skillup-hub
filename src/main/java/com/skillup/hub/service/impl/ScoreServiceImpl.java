@@ -4,13 +4,16 @@ import com.skillup.hub.model.*;
 import com.skillup.hub.repository.ScoreRepository;
 import com.skillup.hub.service.ResumeService;
 import com.skillup.hub.service.ScoreService;
+import com.skillup.hub.service.ai.AiScoreResult;
+import com.skillup.hub.service.ai.AiScoringClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,19 +21,9 @@ public class ScoreServiceImpl implements ScoreService {
 
     private final ScoreRepository scoreRepository;
     private final ResumeService resumeService;
+    private final AiScoringClient aiScoringClient;
 
-    private static final String ENGINE_VERSION = "v1.0-basic";
-
-    // Common tech skills and keywords
-    private static final Set<String> TECH_SKILLS = Set.of(
-            "java", "python", "javascript", "typescript", "react", "angular", "vue",
-            "spring", "springboot", "nodejs", "express", "django", "flask",
-            "sql", "postgresql", "mysql", "mongodb", "redis",
-            "docker", "kubernetes", "aws", "azure", "gcp",
-            "git", "ci/cd", "jenkins", "github", "gitlab",
-            "rest", "api", "microservices", "agile", "scrum",
-            "html", "css", "bootstrap", "tailwind",
-            "junit", "testing", "tdd", "maven", "gradle");
+    private static final String ENGINE_VERSION_AI = "v2.0-ai";
 
     @Override
     public Score scoreResume(UUID resumeId, UUID jobTargetId, String jobInfo) {
@@ -41,26 +34,42 @@ public class ScoreServiceImpl implements ScoreService {
             throw new IllegalArgumentException("Resume has no extracted text");
         }
 
-        // Calculate individual scores
-        double skillsScore = calculateSkillsScore(resumeText, jobInfo);
-        double experienceScore = calculateExperienceScore(resumeText);
-        double keywordsScore = calculateKeywordsScore(resumeText);
-        double formattingScore = calculateFormattingScore(resumeText);
+        // Try AI-based scoring first; no heuristic fallback
+        Double overallScore;
+        Double skillsScore;
+        Double experienceScore;
+        Double keywordsScore;
+        Double formattingScore;
+        String details;
+        String engineVersionUsed = ENGINE_VERSION_AI;
 
-        // Calculate overall score (weighted average)
-        double overallScore = (skillsScore * 0.35) +
-                (experienceScore * 0.30) +
-                (keywordsScore * 0.20) +
-                (formattingScore * 0.15);
+        Optional<AiScoreResult> aiResultOpt = aiScoringClient.score(resumeText, jobInfo);
+        if (aiResultOpt.isPresent()) {
+            AiScoreResult r = aiResultOpt.get();
+            skillsScore = safeBound(r.getSkills());
+            experienceScore = safeBound(r.getExperience());
+            keywordsScore = safeBound(r.getKeywords());
+            formattingScore = safeBound(r.getFormatting());
+            // If overall missing, compute weighted
+            overallScore = r.getOverall() != null && r.getOverall() > 0
+                    ? safeBound(r.getOverall())
+                    : computeOverall(skillsScore, experienceScore, keywordsScore, formattingScore);
+            details = r.detailsAsJson(new com.fasterxml.jackson.databind.ObjectMapper());
+            engineVersionUsed = ENGINE_VERSION_AI;
+        } else {
+            // AI disabled or failed: return zeroed scores with reason in details
+            skillsScore = 0.0;
+            experienceScore = 0.0;
+            keywordsScore = 0.0;
+            formattingScore = 0.0;
+            overallScore = 0.0;
 
-        // Build details JSON
-        Map<String, Object> detailsMap = new HashMap<>();
-        detailsMap.put("jobInfo", jobInfo);
-        detailsMap.put("skillsBreakdown", analyzeSkills(resumeText));
-        detailsMap.put("experienceYears", extractExperienceYears(resumeText));
-        detailsMap.put("sectionsFound", identifySections(resumeText));
-        detailsMap.put("wordCount", resumeText.split("\\s+").length);
-        String details = detailsMap.toString();
+            Map<String, Object> detailsMap = new HashMap<>();
+            detailsMap.put("reason", "AI scoring disabled or unavailable");
+            detailsMap.put("jobInfoProvided", jobInfo != null && !jobInfo.isBlank());
+            detailsMap.put("resumeWordCount", resumeText.split("\\s+").length);
+            details = detailsMap.toString();
+        }
 
         // Create and save score
         Score score = new Score();
@@ -70,7 +79,7 @@ public class ScoreServiceImpl implements ScoreService {
         score.setExperienceScore(experienceScore);
         score.setKeywordsScore(keywordsScore);
         score.setFormattingScore(formattingScore);
-        score.setEngineVersion(ENGINE_VERSION);
+        score.setEngineVersion(engineVersionUsed);
         score.setDetails(details);
         score.setCreatedAt(Instant.now());
 
@@ -83,145 +92,26 @@ public class ScoreServiceImpl implements ScoreService {
                 .orElseThrow(() -> new IllegalArgumentException("Score not found: " + scoreId));
     }
 
+    private double computeOverall(double skillsScore, double experienceScore, double keywordsScore,
+            double formattingScore) {
+        double weighted = (skillsScore * 0.35) +
+                (experienceScore * 0.30) +
+                (keywordsScore * 0.20) +
+                (formattingScore * 0.15);
+        return Math.min(Math.max(weighted, 0.0), 100.0);
+    }
+
+    private double safeBound(Double v) {
+        if (v == null)
+            return 0.0;
+        if (v.isNaN() || v.isInfinite())
+            return 0.0;
+        return Math.min(Math.max(v, 0.0), 100.0);
+    }
+
     @Override
     public Score getLatestScoreForResume(UUID resumeId) {
         return scoreRepository.findFirstByResumeIdOrderByCreatedAtDesc(resumeId)
                 .orElse(null);
-    }
-
-    // Skills scoring: match with job info, percentage of common tech skills found
-    private double calculateSkillsScore(String resumeText, String jobInfo) {
-        String lowerText = resumeText.toLowerCase();
-        String lowerJob = jobInfo != null ? jobInfo.toLowerCase() : "";
-
-        long foundSkills = TECH_SKILLS.stream()
-                .filter(skill -> lowerText.contains(skill) || lowerJob.contains(skill))
-                .count();
-
-        // Bonus if skills match job title
-        int matchingSkills = 0;
-        if (lowerJob.contains("java"))
-            matchingSkills += lowerText.contains("java") ? 5 : 0;
-        if (lowerJob.contains("python"))
-            matchingSkills += lowerText.contains("python") ? 5 : 0;
-        if (lowerJob.contains("react"))
-            matchingSkills += lowerText.contains("react") ? 5 : 0;
-        if (lowerJob.contains("spring"))
-            matchingSkills += lowerText.contains("spring") ? 5 : 0;
-        if (lowerJob.contains("aws"))
-            matchingSkills += lowerText.contains("aws") ? 5 : 0;
-
-        // Score based on number of skills found
-        double rawScore = (foundSkills / 10.0) * 100; // 10+ skills = 100%
-        rawScore += matchingSkills; // Add bonus for matching job skills
-        return Math.min(rawScore, 100.0);
-    }
-
-    // Experience scoring: extract years of experience
-    private double calculateExperienceScore(String text) {
-        int years = extractExperienceYears(text);
-
-        // Score based on years (0-2 years = low, 3-5 = medium, 6+ = high)
-        if (years >= 6)
-            return 100.0;
-        if (years >= 3)
-            return 75.0;
-        if (years >= 1)
-            return 50.0;
-        return 25.0;
-    }
-
-    // Keywords scoring: presence of action verbs and professional terms
-    private double calculateKeywordsScore(String text) {
-        String lowerText = text.toLowerCase();
-        String[] actionVerbs = { "developed", "designed", "implemented", "created", "built",
-                "managed", "led", "collaborated", "achieved", "improved" };
-
-        long foundVerbs = Arrays.stream(actionVerbs)
-                .filter(lowerText::contains)
-                .count();
-
-        double rawScore = (foundVerbs / 5.0) * 100; // 5+ verbs = 100%
-        return Math.min(rawScore, 100.0);
-    }
-
-    // Formatting scoring: check for sections and structure
-    private double calculateFormattingScore(String text) {
-        List<String> sections = identifySections(text);
-        int wordCount = text.split("\\s+").length;
-
-        double score = 0.0;
-
-        // Check for key sections
-        if (sections.contains("experience"))
-            score += 30;
-        if (sections.contains("education"))
-            score += 25;
-        if (sections.contains("skills"))
-            score += 25;
-        if (sections.contains("contact"))
-            score += 10;
-
-        // Check word count (300-800 words is ideal)
-        if (wordCount >= 300 && wordCount <= 800)
-            score += 10;
-
-        return Math.min(score, 100.0);
-    }
-
-    // Extract years of experience from text
-    private int extractExperienceYears(String text) {
-        // Look for patterns like "5 years", "3+ years", "2-4 years"
-        Pattern pattern = Pattern.compile("(\\d+)\\+?\\s*years?\\s*(of\\s*)?experience", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1));
-        }
-
-        // Count date ranges (rough estimate)
-        Pattern datePattern = Pattern.compile("(20\\d{2})\\s*[-–—]\\s*(20\\d{2}|present)", Pattern.CASE_INSENSITIVE);
-        Matcher dateMatcher = datePattern.matcher(text);
-
-        int totalYears = 0;
-        while (dateMatcher.find()) {
-            int startYear = Integer.parseInt(dateMatcher.group(1));
-            String endStr = dateMatcher.group(2).toLowerCase();
-            int endYear = endStr.equals("present") ? 2026 : Integer.parseInt(endStr);
-            totalYears += (endYear - startYear);
-        }
-
-        return totalYears;
-    }
-
-    // Identify resume sections
-    private List<String> identifySections(String text) {
-        String lowerText = text.toLowerCase();
-        List<String> sections = new ArrayList<>();
-
-        if (lowerText.contains("experience") || lowerText.contains("employment"))
-            sections.add("experience");
-        if (lowerText.contains("education"))
-            sections.add("education");
-        if (lowerText.contains("skills") || lowerText.contains("technical"))
-            sections.add("skills");
-        if (lowerText.contains("projects"))
-            sections.add("projects");
-        if (lowerText.contains("contact") || lowerText.contains("email") || lowerText.contains("phone"))
-            sections.add("contact");
-        if (lowerText.contains("summary") || lowerText.contains("objective"))
-            sections.add("summary");
-
-        return sections;
-    }
-
-    // Analyze which skills are present
-    private Map<String, Boolean> analyzeSkills(String text) {
-        String lowerText = text.toLowerCase();
-        Map<String, Boolean> skillsFound = new HashMap<>();
-
-        TECH_SKILLS.forEach(skill -> skillsFound.put(skill, lowerText.contains(skill)));
-
-        return skillsFound;
     }
 }
