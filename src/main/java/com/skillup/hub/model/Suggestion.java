@@ -1,5 +1,6 @@
 package com.skillup.hub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.UUID;
@@ -22,6 +23,7 @@ public class Suggestion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "score_id")
+    @JsonIgnore
     private Score score;
 
     private String category; // skills | experience | format | other

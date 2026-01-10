@@ -1,14 +1,15 @@
 package com.skillup.hub.controller;
 
 import com.skillup.hub.model.Score;
+import com.skillup.hub.model.Suggestion;
+import com.skillup.hub.repository.SuggestionRepository;
 import com.skillup.hub.service.ScoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class ScoreController {
 
     private final ScoreService scoreService;
+    private final SuggestionRepository suggestionRepository;
 
     @PostMapping("/resume/{resumeId}/score")
     public String scoreResume(
@@ -46,5 +48,11 @@ public class ScoreController {
         }
 
         return "redirect:/resume/" + resumeId;
+    }
+
+    @GetMapping("/api/score/{scoreId}/suggestions")
+    @ResponseBody
+    public List<Suggestion> getSuggestions(@PathVariable String scoreId) {
+        return suggestionRepository.findByScoreIdOrderByPriorityAsc(UUID.fromString(scoreId));
     }
 }

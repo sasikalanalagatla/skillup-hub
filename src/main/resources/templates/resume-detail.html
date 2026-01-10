@@ -248,6 +248,76 @@
       .btn-cancel:hover {
         background: #dee2e6;
       }
+      .suggestions-list {
+        margin-top: 20px;
+      }
+      .suggestion-item {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .suggestion-item.priority-high {
+        border-left-color: #dc3545;
+      }
+      .suggestion-item.priority-medium {
+        border-left-color: #ffc107;
+      }
+      .suggestion-item.priority-low {
+        border-left-color: #28a745;
+      }
+      .suggestion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .suggestion-category {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: #e8ecff;
+        color: #667eea;
+      }
+      .suggestion-priority {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .suggestion-priority.high {
+        background: #ffebee;
+        color: #dc3545;
+      }
+      .suggestion-priority.medium {
+        background: #fff8e1;
+        color: #ff9800;
+      }
+      .suggestion-priority.low {
+        background: #e8f5e9;
+        color: #4caf50;
+      }
+      .suggestion-message {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .suggestion-steps {
+        color: #666;
+        line-height: 1.6;
+        white-space: pre-line;
+      }
+      .no-suggestions {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
     </style>
   </head>
   <body>
@@ -399,7 +469,14 @@
           >
             🎯 Score Against Job
           </button>
-          <a href="#" class="btn btn-primary">📋 View Suggestions</a>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openSuggestionsModal()"
+            th:if="${score != null}"
+          >
+            📋 View Suggestions
+          </button>
           <form
             th:action="@{/resume/{id}/delete(id=${resume.id})}"
             method="post"
@@ -426,6 +503,19 @@
       <div class="card" th:if="${resume.parsedJson != null}">
         <h2>Parsed Data (JSON)</h2>
         <div class="extracted-text" th:text="${resume.parsedJson}">{}</div>
+      </div>
+
+      <!-- Suggestions Modal -->
+      <div id="suggestionsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px">
+          <span class="close" onclick="closeSuggestionsModal()">&times;</span>
+          <div class="modal-header">💡 Resume Improvement Suggestions</div>
+          <div id="suggestionsContainer">
+            <div style="text-align: center; padding: 40px; color: #999">
+              Loading suggestions...
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Job Modal -->
@@ -506,10 +596,79 @@
           document.getElementById("jobModal").classList.remove("show");
         }
 
+        function openSuggestionsModal() {
+          const modal = document.getElementById("suggestionsModal");
+          modal.classList.add("show");
+          loadSuggestions();
+        }
+
+        function closeSuggestionsModal() {
+          document.getElementById("suggestionsModal").classList.remove("show");
+        }
+
+        function loadSuggestions() {
+          const scoreId = "[[${score?.id}]]";
+          console.log("Score ID:", scoreId);
+          if (!scoreId || scoreId === "") {
+            document.getElementById("suggestionsContainer").innerHTML =
+              '<div class="no-suggestions">No score found. Please score your resume first.</div>';
+            return;
+          }
+
+          const url = `/api/score/${scoreId}/suggestions`;
+          console.log("Fetching from:", url);
+
+          fetch(url)
+            .then((response) => {
+              console.log("Response status:", response.status);
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((suggestions) => {
+              console.log("Suggestions received:", suggestions);
+              if (suggestions.length === 0) {
+                document.getElementById("suggestionsContainer").innerHTML =
+                  '<div class="no-suggestions">No suggestions available yet. Try scoring your resume against a job.</div>';
+                return;
+              }
+
+              let html = '<div class="suggestions-list">';
+              suggestions.forEach((sug) => {
+                html += `
+                  <div class="suggestion-item priority-${sug.priority}">
+                    <div class="suggestion-header">
+                      <span class="suggestion-category">${sug.category.toUpperCase()}</span>
+                      <span class="suggestion-priority ${
+                        sug.priority
+                      }">${sug.priority.toUpperCase()}</span>
+                    </div>
+                    <div class="suggestion-message">${sug.message}</div>
+                    <div class="suggestion-steps">${sug.remediationSteps}</div>
+                  </div>
+                `;
+              });
+              html += "</div>";
+              document.getElementById("suggestionsContainer").innerHTML = html;
+            })
+            .catch((error) => {
+              console.error("Error loading suggestions:", error);
+              document.getElementById("suggestionsContainer").innerHTML =
+                '<div class="no-suggestions">Error loading suggestions: ' +
+                error.message +
+                ". Check browser console for details.</div>";
+            });
+        }
+
         window.onclick = function (event) {
-          const modal = document.getElementById("jobModal");
-          if (event.target === modal) {
-            modal.classList.remove("show");
+          const jobModal = document.getElementById("jobModal");
+          const suggestionsModal = document.getElementById("suggestionsModal");
+          if (event.target === jobModal) {
+            jobModal.classList.remove("show");
+          }
+          if (event.target === suggestionsModal) {
+            suggestionsModal.classList.remove("show");
           }
         };
       </script>

@@ -31,8 +31,8 @@ public class AiScoringClient {
     public AiScoringClient(
             @Value("${ai.scoring.enabled:false}") boolean enabled,
             @Value("${ai.scoring.apiKey:}") String apiKey,
-            @Value("${ai.scoring.baseUrl:https://api.openai.com}") String baseUrl,
-            @Value("${ai.scoring.model:gpt-4o-mini}") String model) {
+            @Value("${ai.scoring.baseUrl:https://generativelanguage.googleapis.com}") String baseUrl,
+            @Value("${ai.scoring.model:gemini-1.5-pro}") String model) {
         this.enabled = enabled;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
@@ -49,19 +49,19 @@ public class AiScoringClient {
         }
         try {
             String prompt = buildPrompt(resumeText, jobInfo);
+            String systemPrompt = "You are a precise resume-job matching and scoring engine. Return strict JSON.";
             String body = mapper.writeValueAsString(Map.of(
-                    "model", model,
-                    "messages", new Object[] {
-                            Map.of("role", "system", "content",
-                                    "You are a precise resume-job matching and scoring engine. Return strict JSON."),
-                            Map.of("role", "user", "content", prompt)
+                    "contents", new Object[] {
+                            Map.of("parts", new Object[] {
+                                    Map.of("text", systemPrompt + "\n\n" + prompt)
+                            })
                     },
-                    "temperature", 0));
+                    "generationConfig", Map.of("temperature", 0)));
 
+            String url = baseUrl + "/v1beta/models/" + model + ":generateContent?key=" + apiKey;
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/v1/chat/completions"))
+                    .uri(URI.create(url))
                     .timeout(Duration.ofSeconds(30))
-                    .header("Authorization", "Bearer " + apiKey)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
@@ -74,9 +74,9 @@ public class AiScoringClient {
                 return Optional.empty();
             }
 
-            // Extract the assistant message content
+            // Extract Gemini response content
             JsonNode root = mapper.readTree(response.body());
-            JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
+            JsonNode contentNode = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
             if (contentNode.isMissingNode() || contentNode.isNull()) {
                 log.warn("AI scoring API missing content");
                 return Optional.empty();
@@ -123,18 +123,17 @@ public class AiScoringClient {
     }
 
     private String buildPrompt(String resumeText, String jobInfo) {
-        String template = "You will score how well a resume matches a job.\n" +
+        String jobSection = "JOB INFO:\n" + safeTruncate(jobInfo, 6000);
+        String resumeSection = "RESUME TEXT:\n" + safeTruncate(resumeText, 12000);
+
+        return "You will score how well a resume matches a job.\n" +
                 "Return ONLY a compact JSON object with keys: overall, skills, experience, keywords, formatting, details.\n"
                 +
                 "- Each score must be a number between 0 and 100.\n" +
                 "- overall is a weighted mix: skills 35%, experience 30%, keywords 20%, formatting 15%.\n" +
                 "- details should include: matchedSkills[], missingSkills[], inferredRole, experienceYears, sectionsFound[], wordCount, briefNotes.\n\n"
                 +
-                "JOB INFO:\n" +
-                "%s\n\n" +
-                "RESUME TEXT:\n" +
-                "%s";
-        return String.format(template, safeTruncate(jobInfo, 6000), safeTruncate(resumeText, 12000));
+                jobSection + "\n\n" + resumeSection;
     }
 
     private String safeTruncate(String s, int max) {
