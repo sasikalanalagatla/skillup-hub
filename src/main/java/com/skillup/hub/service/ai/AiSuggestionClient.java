@@ -28,9 +28,9 @@ public class AiSuggestionClient {
 
     public AiSuggestionClient(
             @Value("${ai.scoring.enabled:false}") boolean enabled,
-            @Value("${ai.scoring.apiKey:}") String apiKey,
-            @Value("${ai.scoring.baseUrl:https://generativelanguage.googleapis.com}") String baseUrl,
-            @Value("${ai.scoring.model:gemini-1.5-pro}") String model) {
+            @Value("${ai.scoring.apiKey}") String apiKey,
+            @Value("${ai.scoring.baseUrl}") String baseUrl,
+            @Value("${ai.scoring.model}") String model) {
         this.enabled = enabled;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
@@ -57,6 +57,7 @@ public class AiSuggestionClient {
                     },
                     "generationConfig", Map.of("temperature", 0.3)));
 
+// ✅ working for text-bison
             String url = baseUrl + "/v1beta/models/" + model + ":generateContent?key=" + apiKey;
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))

@@ -188,14 +188,17 @@
         display: block;
       }
       .modal-content {
-        background-color: #fefefe;
-        margin: 5% auto;
-        padding: 30px;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 500px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-      }
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;        /* 👈 ADD THIS */
+  overflow-y: auto;       /* 👈 ADD THIS */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
       .modal-header {
         font-size: 1.5rem;
         font-weight: 600;

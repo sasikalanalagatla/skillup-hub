@@ -20,7 +20,6 @@ import java.util.Optional;
 @Slf4j
 @Component
 public class AiScoringClient {
-
     private final boolean enabled;
     private final String apiKey;
     private final String baseUrl;
@@ -30,9 +29,9 @@ public class AiScoringClient {
 
     public AiScoringClient(
             @Value("${ai.scoring.enabled:false}") boolean enabled,
-            @Value("${ai.scoring.apiKey:}") String apiKey,
-            @Value("${ai.scoring.baseUrl:https://generativelanguage.googleapis.com}") String baseUrl,
-            @Value("${ai.scoring.model:gemini-1.5-pro}") String model) {
+            @Value("${ai.scoring.apiKey}") String apiKey,
+            @Value("${ai.scoring.baseUrl}") String baseUrl,
+            @Value("${ai.scoring.model}") String model) {
         this.enabled = enabled;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
@@ -58,7 +57,9 @@ public class AiScoringClient {
                     },
                     "generationConfig", Map.of("temperature", 0)));
 
+// ✅ working for text-bison
             String url = baseUrl + "/v1beta/models/" + model + ":generateContent?key=" + apiKey;
+// instead of /v1beta/
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(Duration.ofSeconds(30))
@@ -124,8 +125,8 @@ public class AiScoringClient {
 
     private String buildPrompt(String resumeText, String jobInfo) {
         String jobSection = "JOB INFO:\n" + safeTruncate(jobInfo, 6000);
-        String resumeSection = "RESUME TEXT:\n" + safeTruncate(resumeText, 12000);
-
+// in buildPrompt()
+        String resumeSection = "RESUME TEXT (first 8000 chars):\n" + safeTruncate(resumeText, 8000);
         return "You will score how well a resume matches a job.\n" +
                 "Return ONLY a compact JSON object with keys: overall, skills, experience, keywords, formatting, details.\n"
                 +
