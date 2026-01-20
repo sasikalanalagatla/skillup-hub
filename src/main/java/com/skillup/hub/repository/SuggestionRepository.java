@@ -9,7 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface SuggestionRepository extends JpaRepository<Suggestion, UUID> {
-    List<Suggestion> findByScoreId(UUID scoreId);
-
     List<Suggestion> findByScoreIdOrderByPriorityAsc(UUID scoreId);
 }

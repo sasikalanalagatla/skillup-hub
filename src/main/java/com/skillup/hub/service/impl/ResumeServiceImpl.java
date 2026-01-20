@@ -1,5 +1,6 @@
 package com.skillup.hub.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.skillup.hub.model.Resume;
 import com.skillup.hub.model.User;
 import com.skillup.hub.repository.ResumeRepository;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -21,6 +23,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     private final ResumeRepository resumeRepository;
     private final Tika tika = new Tika();
+    private final ActivityService activityService;
 
     @Override
     public Resume uploadResume(MultipartFile file, User user, String privacyLevel) throws IOException, TikaException {
@@ -44,7 +47,20 @@ public class ResumeServiceImpl implements ResumeService {
         resume.setPrivacyLevel(privacyLevel != null ? privacyLevel : "private");
         resume.setUploadAt(Instant.now());
 
-        return resumeRepository.save(resume);
+        Resume savedResume = resumeRepository.save(resume);
+
+        activityService.logActivity(
+                user,
+                "RESUME_UPLOADED",
+                Map.of(
+                        "resumeId", savedResume.getId().toString(),
+                        "filename", filename,
+                        "fileSizeBytes", file.getSize(),
+                        "privacyLevel", privacyLevel != null ? privacyLevel : "private"
+                )
+        );
+
+        return savedResume;
     }
 
     @Override
@@ -64,9 +80,18 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
-    public void deleteResume(UUID id) {
+    public void deleteResume(UUID id) throws JsonProcessingException {
         Resume resume = getResumeById(id);
+        User user = resume.getUser();
         resume.setDeletedAt(Instant.now());
         resumeRepository.save(resume);
+        activityService.logActivity(
+                user,
+                "RESUME_DELETED",
+                Map.of(
+                        "resumeId", id.toString(),
+                        "filename", resume.getFilename()
+                )
+        );
     }
 }

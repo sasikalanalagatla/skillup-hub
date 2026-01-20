@@ -1,5 +1,6 @@
 package com.skillup.hub.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.skillup.hub.model.Resume;
 import com.skillup.hub.model.User;
 import org.apache.tika.exception.TikaException;
@@ -19,5 +20,5 @@ public interface ResumeService {
 
     List<Resume> getAllActiveResumes();
 
-    void deleteResume(UUID id);
+    void deleteResume(UUID id) throws JsonProcessingException;
 }

@@ -325,7 +325,18 @@
   </head>
   <body>
     <div class="container">
-      <a href="/" class="back-link">← Back to Home</a>
+      <div class="mb-4">
+        <a href="/" class="back-link">← Back to Home</a>
+        <span class="mx-3 text-white">|</span>
+        <a th:href="@{/user/activity}" class="back-link">My Activity Log →</a>
+      </div>
+
+      <!-- Or in the actions area at the bottom -->
+      <div class="actions mt-4">
+        <a th:href="@{/user/activity}" class="btn btn-outline-light">
+          View My Activity
+        </a>
+      </div>
 
       <div class="header">
         <h1>📄 Resume Details</h1>

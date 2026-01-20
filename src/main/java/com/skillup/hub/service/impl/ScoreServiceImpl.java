@@ -1,8 +1,10 @@
 package com.skillup.hub.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.skillup.hub.model.Resume;
 import com.skillup.hub.model.Score;
 import com.skillup.hub.model.Suggestion;
+import com.skillup.hub.model.User;
 import com.skillup.hub.repository.ScoreRepository;
 import com.skillup.hub.repository.SuggestionRepository;
 import com.skillup.hub.service.ResumeService;
@@ -22,6 +24,7 @@ public class ScoreServiceImpl implements ScoreService {
 
     private final ScoreRepository scoreRepository;
     private final ResumeService resumeService;
+    private final ActivityService activityService;
     private final AiScoringClient aiScoringClient;
     private final AiSuggestionClient aiSuggestionClient;
     private final SuggestionRepository suggestionRepository;
@@ -30,8 +33,9 @@ public class ScoreServiceImpl implements ScoreService {
     private static final String ENGINE_VERSION_BASIC = "v1.0-basic";
 
     @Override
-    public Score scoreResume(UUID resumeId, UUID jobTargetId, String jobInfo) {
+    public Score scoreResume(UUID resumeId, UUID jobTargetId, String jobInfo) throws JsonProcessingException {
         Resume resume = resumeService.getResumeById(resumeId);
+        User user = resume.getUser();
         String resumeText = resume.getTextExtracted();
 
         if (resumeText == null || resumeText.trim().isEmpty()) {
@@ -88,9 +92,22 @@ public class ScoreServiceImpl implements ScoreService {
         score.setCreatedAt(Instant.now());
 
         Score savedScore = scoreRepository.save(score);
-
+        activityService.logActivity(
+                user,
+                "RESUME_SCORED",
+                Map.of(
+                        "resumeId",      resumeId.toString(),
+                        "scoreId",       savedScore.getId().toString(),
+                        "overallScore",  savedScore.getOverallScore(),
+                        "skillsScore",   savedScore.getSkillsScore(),
+                        "engineVersion", savedScore.getEngineVersion() != null ? savedScore.getEngineVersion() : "unknown",
+                        "usedAI",        aiResultOpt.isPresent() ? "true" : "false",
+                        "jobInfoLength", jobInfo != null ? jobInfo.length() : 0
+                )
+        );
         // Generate and persist suggestions (AI-only)
         generateAndSaveSuggestions(savedScore, resumeText, jobInfo, aiResultOpt);
+
 
         return savedScore;
     }
