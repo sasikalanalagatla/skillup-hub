@@ -169,6 +169,11 @@ public class ScoreServiceImpl implements ScoreService {
             suggestion.setMessage(item.getMessage());
             suggestion.setPriority(item.getPriority());
             suggestion.setRemediationSteps(item.getRemediationSteps());
+            suggestion.setRecommendationType(item.getRecommendationType());   // e.g. "INTERNSHIP", "BOOTCAMP"
+            suggestion.setProgramName(item.getProgramName());                // e.g. "Scaler Academy"
+            suggestion.setProgramUrl(item.getProgramUrl());                  // e.g. "https://scaler.com/..."
+            suggestion.setDuration(item.getDuration());                      // e.g. "6-9 months"
+            suggestion.setCostRange(item.getCostRange());
             toSave.add(suggestion);
         }
 

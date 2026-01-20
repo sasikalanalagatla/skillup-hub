@@ -102,6 +102,11 @@ public class AiSuggestionClient {
                 item.setMessage(getString(sMap, "message", ""));
                 item.setPriority(getString(sMap, "priority", "medium"));
                 item.setRemediationSteps(getString(sMap, "remediationSteps", ""));
+                item.setRecommendationType(getString(sMap, "recommendationType", null));
+                item.setProgramName(getString(sMap, "programName", null));
+                item.setProgramUrl(getString(sMap, "programUrl", null));
+                item.setDuration(getString(sMap, "duration", null));
+                item.setCostRange(getString(sMap, "costRange", null));
                 suggestions.add(item);
             }
 
@@ -118,14 +123,25 @@ public class AiSuggestionClient {
     }
 
     private String buildPrompt(String resumeText, String jobInfo, Map<String, Object> scoreDetails) {
-        String template = "Analyze this resume against the job requirements and provide 3-6 actionable suggestions for improvement.\n\n"
-                +
-                "Return ONLY a JSON object with key 'suggestions' containing an array of objects with:\n" +
-                "- category: 'skills' | 'experience' | 'format' | 'keywords' | 'other'\n" +
-                "- message: concise description of the issue (1-2 sentences)\n" +
+        String template = "You are a resume improvement expert. Analyze the resume against the job and return ONLY valid JSON.\n\n" +
+                "Output format: {\"suggestions\": [array of objects]}\n\n" +
+                "Each object MUST have exactly these keys:\n" +
+                "- category: 'skills' | 'experience' | 'format' | 'keywords' | 'CAREER_GROWTH' | 'other'\n" +
+                "- message: string (1-2 sentences explaining the issue or recommendation)\n" +
                 "- priority: 'high' | 'medium' | 'low'\n" +
-                "- remediationSteps: specific actionable steps (2-4 bullet points)\n\n" +
-                "Focus on gaps between the resume and job requirements. Be specific and constructive.\n\n" +
+                "- remediationSteps: string (2-5 lines or bullet points of clear actions)\n\n" +
+                "MANDATORY RULE FOR CAREER_GROWTH:\n" +
+                "If the resume has low experience, no internships, or lacks real-world projects for the job role:\n" +
+                "  - ALWAYS include at least 1-2 suggestions with category = 'CAREER_GROWTH'\n" +
+                "  - For EVERY 'CAREER_GROWTH' suggestion, YOU MUST fill ALL of these fields (do NOT leave null or empty):\n" +
+                "    - recommendationType: 'INTERNSHIP' or 'BOOTCAMP' or 'CERTIFICATE' or 'PROJECT'\n" +
+                "    - programName: full official name (e.g. 'Scaler Academy Full-Stack Bootcamp')\n" +
+                "    - programUrl: real valid https link to apply or learn more\n" +
+                "    - duration: time commitment (e.g. '6-9 months', 'Summer 2026')\n" +
+                "    - costRange: cost info (e.g. 'Free', '₹80,000–₹1,20,000', 'Scholarships available')\n" +
+                "  - Put the main benefit in 'message'\n" +
+                "  - Put detailed steps/eligibility in 'remediationSteps'\n\n" +
+                "Be realistic, current (2025-2026), and helpful.\n\n" +
                 "JOB INFO:\n%s\n\n" +
                 "RESUME TEXT:\n%s\n\n" +
                 "SCORE DETAILS:\n%s";
@@ -158,6 +174,11 @@ public class AiSuggestionClient {
         private String message;
         private String priority;
         private String remediationSteps;
+        private String recommendationType;
+        private String programName;
+        private String programUrl;
+        private String duration;
+        private String costRange;
 
         public String getCategory() {
             return category;
@@ -190,5 +211,20 @@ public class AiSuggestionClient {
         public void setRemediationSteps(String remediationSteps) {
             this.remediationSteps = remediationSteps;
         }
+
+        public String getRecommendationType() { return recommendationType; }
+        public void setRecommendationType(String recommendationType) { this.recommendationType = recommendationType; }
+
+        public String getProgramName() { return programName; }
+        public void setProgramName(String programName) { this.programName = programName; }
+
+        public String getProgramUrl() { return programUrl; }
+        public void setProgramUrl(String programUrl) { this.programUrl = programUrl; }
+
+        public String getDuration() { return duration; }
+        public void setDuration(String duration) { this.duration = duration; }
+
+        public String getCostRange() { return costRange; }
+        public void setCostRange(String costRange) { this.costRange = costRange; }
     }
 }

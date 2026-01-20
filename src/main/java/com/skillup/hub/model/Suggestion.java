@@ -3,6 +3,7 @@ package com.skillup.hub.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -26,13 +27,25 @@ public class Suggestion {
     @JsonIgnore
     private Score score;
 
-    private String category; // skills | experience | format | other
+    private String category;
 
     @Column(columnDefinition = "TEXT")
     private String message;
 
-    private String priority; // high | medium | low
+    private String priority;
 
     @Column(columnDefinition = "TEXT")
     private String remediationSteps;
+
+    private String recommendationType;
+
+    private String programName;
+
+    private String programUrl;
+
+    private String duration;
+
+    private String costRange;
+
+    private Instant createdAt = Instant.now();
 }
