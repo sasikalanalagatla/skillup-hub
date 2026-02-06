@@ -20,6 +20,42 @@
             margin: 0 auto;
         }
 
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 10px 0;
+        }
+
+        .logo {
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
         .header {
             text-align: center;
             color: white;
@@ -126,16 +162,42 @@
         .load-more-btn:hover {
             background: #5a6268;
         }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
     </style>
 </head>
 
 <body>
 <div class="container">
 
+    <div class="nav-bar">
+        <a th:href="@{/}" class="logo">SkillUp Hub</a>
+        <div class="nav-links">
+            <span th:if="${session.user != null}" style="color: white; margin-right: 10px;">
+                Hi, <span th:text="${session.user.displayName}">User</span>
+            </span>
+            <a th:if="${session.user == null}" th:href="@{/login}" class="nav-btn">Sign In</a>
+            <a th:if="${session.user == null}" th:href="@{/signup}" class="nav-btn">Sign Up</a>
+            <a th:if="${session.user != null}" th:href="@{/logout}" class="nav-btn">Logout</a>
+        </div>
+    </div>
+
     <div class="header">
         <h1>SkillUp Hub - Resume Analyzer</h1>
         <p>Upload your resume and get AI-powered insights & suggestions</p>
     </div>
+    
+    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
 
     <!-- Upload Form -->
     <div class="card">
@@ -145,9 +207,10 @@
                 <input type="file" name="file" accept=".pdf,.doc,.docx" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" th:if="${session.user == null}">
                 <label>Email (optional)</label>
                 <input type="email" name="email" placeholder="you@example.com">
+                <small style="color: #666; margin-top: 4px;">Sign in to save your history automatically</small>
             </div>
 
             <div class="form-group">

@@ -326,8 +326,6 @@
 <div class="container">
   <div class="mb-4">
     <a href="/" class="back-link">← Back to Home</a>
-    <span class="mx-3 text-white">|</span>
-    <a th:href="@{/user/activity}" class="back-link">My Activity Log →</a>
   </div>
 
   <div class="header">
@@ -537,66 +535,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Job Form (no modal, simple inline form) -->
-  <div class="card">
-    <h2>🎯 Score Against Job</h2>
-    <form
-            th:action="@{/resume/{id}/score(id=${resume.id})}"
-            method="post"
-    >
-      <div class="form-group">
-        <label for="jobTitle">Job Title</label>
-        <input
-                type="text"
-                id="jobTitle"
-                name="jobTitle"
-                placeholder="e.g., Senior Java Developer, React Engineer"
-        />
-      </div>
-      <div style="text-align: center; color: #999; margin: 15px 0">
-        OR
-      </div>
-      <div class="form-group">
-        <label for="jobUrl">Job URL</label>
-        <input
-                type="url"
-                id="jobUrl"
-                name="jobUrl"
-                placeholder="https://example.com/jobs/123"
-        />
-      </div>
-      <div style="text-align: center; color: #999; margin: 15px 0">
-        OR
-      </div>
-      <div class="form-group">
-        <label for="jobDescription">Job Description (paste)</label>
-        <textarea
-                id="jobDescription"
-                name="jobDescription"
-                rows="6"
-                placeholder="Paste the job description here for more accurate role-specific scoring"
-                style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ddd;
-              border-radius: 6px;
-              font-size: 1rem;
-              box-sizing: border-box;
-            "
-        ></textarea>
-      </div>
-      <p style="color: #999; font-size: 0.9rem; margin-bottom: 20px">
-        At least one field is required
-      </p>
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-primary">
-          Score Resume
-        </button>
-      </div>
-    </form>
-  </div>
-
 </div>
 </body>
 </html>

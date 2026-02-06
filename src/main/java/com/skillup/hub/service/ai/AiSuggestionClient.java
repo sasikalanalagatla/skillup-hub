@@ -14,6 +14,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -57,7 +58,6 @@ public class AiSuggestionClient {
                     },
                     "generationConfig", Map.of("temperature", 0.3)));
 
-// ✅ working for text-bison
             String url = baseUrl + "/v1beta/models/" + model + ":generateContent?key=" + apiKey;
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -101,12 +101,41 @@ public class AiSuggestionClient {
                 item.setCategory(getString(sMap, "category", "other"));
                 item.setMessage(getString(sMap, "message", ""));
                 item.setPriority(getString(sMap, "priority", "medium"));
-                item.setRemediationSteps(getString(sMap, "remediationSteps", ""));
-                item.setRecommendationType(getString(sMap, "recommendationType", null));
-                item.setProgramName(getString(sMap, "programName", null));
-                item.setProgramUrl(getString(sMap, "programUrl", null));
-                item.setDuration(getString(sMap, "duration", null));
-                item.setCostRange(getString(sMap, "costRange", null));
+                
+                // Handle complex remediationSteps
+                Object remStepsObj = sMap.get("remediationSteps");
+                if (remStepsObj instanceof Map) {
+                    // If AI nested the details, extract them
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> remMap = (Map<String, Object>) remStepsObj;
+                    
+                    if (sMap.get("programName") == null) item.setProgramName(getString(remMap, "programName", null));
+                    if (sMap.get("programUrl") == null) item.setProgramUrl(getString(remMap, "programUrl", null));
+                    if (sMap.get("duration") == null) item.setDuration(getString(remMap, "duration", null));
+                    if (sMap.get("costRange") == null) item.setCostRange(getString(remMap, "costRange", null));
+                    if (sMap.get("recommendationType") == null) item.setRecommendationType(getString(remMap, "recommendationType", null));
+                    
+                    // Try to find a text message inside the nested object
+                    String nestedMsg = getString(remMap, "message", null);
+                    if (nestedMsg == null) nestedMsg = getString(remMap, "text", null);
+                    if (nestedMsg == null) nestedMsg = getString(remMap, "steps", "");
+                    item.setRemediationSteps(nestedMsg);
+                } else if (remStepsObj instanceof List) {
+                    // If it's a list of strings, join them
+                    List<?> list = (List<?>) remStepsObj;
+                    String joined = list.stream().map(String::valueOf).collect(Collectors.joining("\n- "));
+                    item.setRemediationSteps("- " + joined);
+                } else {
+                    item.setRemediationSteps(getString(sMap, "remediationSteps", ""));
+                }
+
+                // Standard extraction for top-level fields (overwrites if present)
+                if (sMap.containsKey("recommendationType")) item.setRecommendationType(getString(sMap, "recommendationType", null));
+                if (sMap.containsKey("programName")) item.setProgramName(getString(sMap, "programName", null));
+                if (sMap.containsKey("programUrl")) item.setProgramUrl(getString(sMap, "programUrl", null));
+                if (sMap.containsKey("duration")) item.setDuration(getString(sMap, "duration", null));
+                if (sMap.containsKey("costRange")) item.setCostRange(getString(sMap, "costRange", null));
+
                 suggestions.add(item);
             }
 
@@ -119,26 +148,28 @@ public class AiSuggestionClient {
 
     private String getString(Map<String, Object> map, String key, String defaultValue) {
         Object val = map.get(key);
-        return val != null ? String.valueOf(val) : defaultValue;
+        if (val == null) return defaultValue;
+        if (val instanceof String) return (String) val;
+        return String.valueOf(val);
     }
 
     private String buildPrompt(String resumeText, String jobInfo, Map<String, Object> scoreDetails) {
         String template = "You are a resume improvement expert. Analyze the resume against the job and return ONLY valid JSON.\n\n" +
                 "Output format: {\"suggestions\": [array of objects]}\n\n" +
-                "Each object MUST have exactly these keys:\n" +
+                "Each object MUST have exactly these keys (FLAT structure, do NOT nest objects):\n" +
                 "- category: 'skills' | 'experience' | 'format' | 'keywords' | 'CAREER_GROWTH' | 'other'\n" +
                 "- message: string (1-2 sentences explaining the issue or recommendation)\n" +
                 "- priority: 'high' | 'medium' | 'low'\n" +
-                "- remediationSteps: string (2-5 lines or bullet points of clear actions)\n\n" +
+                "- remediationSteps: string (2-5 lines or bullet points of clear actions). MUST be a simple string.\n\n" +
                 "MANDATORY RULE FOR CAREER_GROWTH:\n" +
                 "If the resume has low experience, no internships, or lacks real-world projects for the job role:\n" +
                 "  - ALWAYS include at least 1-2 suggestions with category = 'CAREER_GROWTH'\n" +
-                "  - For EVERY 'CAREER_GROWTH' suggestion, YOU MUST fill ALL of these fields (do NOT leave null or empty):\n" +
+                "  - For EVERY 'CAREER_GROWTH' suggestion, YOU MUST fill ALL of these fields as TOP-LEVEL keys (siblings of category):\n" +
                 "    - recommendationType: 'INTERNSHIP' or 'BOOTCAMP' or 'CERTIFICATE' or 'PROJECT'\n" +
-                "    - programName: full official name (e.g. 'Scaler Academy Full-Stack Bootcamp')\n" +
+                "    - programName: full official name (e.g. 'Udemy Full-Stack Bootcamp')\n" +
                 "    - programUrl: real valid https link to apply or learn more\n" +
-                "    - duration: time commitment (e.g. '6-9 months', 'Summer 2026')\n" +
-                "    - costRange: cost info (e.g. 'Free', '₹80,000–₹1,20,000', 'Scholarships available')\n" +
+                "    - duration: time commitment (e.g. '6-9 months')\n" +
+                "    - costRange: cost info (e.g. '$10 - $200')\n" +
                 "  - Put the main benefit in 'message'\n" +
                 "  - Put detailed steps/eligibility in 'remediationSteps'\n\n" +
                 "Be realistic, current (2025-2026), and helpful.\n\n" +
