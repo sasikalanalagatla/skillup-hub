@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suggestions - SkillUp Hub</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 30px;
+      color: white;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card {
+      background: rgba(255,255,255,0.95);
+      color: #333;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    h1, h2 { text-align: center; }
+    .back { color: white; font-weight: bold; text-decoration: none; }
+    .suggestion-item {
+      background: #f8f9ff;
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 5px solid #667eea;
+      color: #333;
+    }
+    .suggestion-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .suggestion-category {
+      font-weight: bold;
+      color: #667eea;
+    }
+    .suggestion-priority {
+      font-size: 0.9rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+    .priority-high { background: #ffebee; color: #c62828; }
+    .priority-medium { background: #fff8e1; color: #f57c00; }
+    .priority-low { background: #e8f5e9; color: #2e7d32; }
+    .suggestion-message { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: #333;}
+    .suggestion-steps { color: #444; line-height: 1.6; white-space: pre-line; }
+    .career-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #e3f2fd;
+      border-radius: 6px;
+      border: 1px solid #90caf9;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: #5a6cd9; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/" class="back">← Back to Resume Details</a>
+
+  <h1>💡 Resume Improvement Suggestions</h1>
+
+  <div class="card" th:if="${suggestions.isEmpty()}">
+    <p style="text-align:center; color:#555;">No suggestions available yet. Score your resume against a job to get them.</p>
+  </div>
+
+  <div th:each="sug : ${suggestions}" class="suggestion-item">
+    <div class="suggestion-header">
+      <span class="suggestion-category" th:text="${sug.category.toUpperCase()}"></span>
+      <span class="suggestion-priority" th:classappend="'priority-' + ${sug.priority}" th:text="${sug.priority.toUpperCase()}"></span>
+    </div>
+    <div class="suggestion-message" th:text="${sug.message}"></div>
+    <div class="suggestion-steps" th:utext="${sug.remediationSteps.replace('\n', '<br>')}"></div>
+
+    <!-- Special card for career growth suggestions -->
+    <div class="career-box" th:if="${sug.category == 'CAREER_GROWTH' and sug.programName != null}">
+      <strong th:text="${sug.programName}"></strong><br>
+      <small>
+        <span th:text="${sug.duration ?: ''}"></span>
+        <span th:if="${sug.duration != null and sug.costRange != null}"> • </span>
+        <span th:text="${sug.costRange ?: 'Cost not specified'}"></span>
+      </small><br>
+      <a th:if="${sug.programUrl}" th:href="${sug.programUrl}" target="_blank" class="btn" style="margin-top:8px;">
+        Apply / Learn More →
+      </a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

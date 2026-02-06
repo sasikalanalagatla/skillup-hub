@@ -1,14 +1,18 @@
 package com.skillup.hub.controller;
 
+import com.skillup.hub.model.Resume;
 import com.skillup.hub.model.Score;
 import com.skillup.hub.model.Suggestion;
 import com.skillup.hub.repository.SuggestionRepository;
+import com.skillup.hub.service.ResumeService;
 import com.skillup.hub.service.ScoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +22,7 @@ public class ScoreController {
 
     private final ScoreService scoreService;
     private final SuggestionRepository suggestionRepository;
+    private final ResumeService resumeService;
 
     @PostMapping("/resume/{resumeId}/score")
     public String scoreResume(
@@ -54,5 +59,21 @@ public class ScoreController {
     @ResponseBody
     public List<Suggestion> getSuggestions(@PathVariable String scoreId) {
         return suggestionRepository.findByScoreIdOrderByPriorityAsc(UUID.fromString(scoreId));
+    }
+
+    @GetMapping("/job-score/{id}")
+    public String jobScorePage(@PathVariable String id, Model model) {
+        Resume resume = resumeService.getResumeById(UUID.fromString(id));
+        Score score = scoreService.getLatestScoreForResume(resume.getId());
+
+        List<Suggestion> suggestions = (score != null)
+                ? suggestionRepository.findByScoreIdOrderByPriorityAsc(score.getId())
+                : Collections.emptyList();
+
+        model.addAttribute("resume", resume);
+        model.addAttribute("score", score);
+        model.addAttribute("suggestions", suggestions);
+
+        return "job-score";  // → templates/job-score.html
     }
 }

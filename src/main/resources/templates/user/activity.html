@@ -21,7 +21,7 @@
     <h2 th:text="'Recent actions for ' + ${user.displayName ?: user.email}"></h2>
 
     <div th:if="${activities.isEmpty()}" class="text-center py-5">
-      <p>No activities yet. Start uploading and scoring resumes!</p>
+      <p>No activities yet!</p>
     </div>
 
     <div th:each="activity : ${activities}" class="activity-item">

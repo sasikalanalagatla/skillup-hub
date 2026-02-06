@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Score Resume - SkillUp Hub</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: white; color: #333; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover { background: #5a6cd9; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 600; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+    .suggestion-item { background: #f8f9ff; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #667eea; }
+    .career-box { margin-top: 12px; padding: 12px; background: #e3f2fd; border-radius: 6px; border: 1px solid #90caf9; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="/" style="color: white; text-decoration: none; font-weight: bold;">← Back to Resume Details</a>
+  <h1>Score Resume</h1>
+
+  <div class="card">
+    <h2>Resume: <span th:text="${resume.filename}"></span></h2>
+    <p th:if="${score == null}">No score yet. Use the form below.</p>
+    <div th:if="${score != null}">
+      <p>Overall Score: <strong th:text="${#numbers.formatDecimal(score.overallScore, 1, 1)} + ' / 100'"></strong></p>
+      <ul>
+        <li>Skills: <span th:text="${#numbers.formatDecimal(score.skillsScore, 1, 1)}"></span></li>
+        <li>Experience: <span th:text="${#numbers.formatDecimal(score.experienceScore, 1, 1)}"></span></li>
+        <li>Keywords: <span th:text="${#numbers.formatDecimal(score.keywordsScore, 1, 1)}"></span></li>
+        <li>Formatting: <span th:text="${#numbers.formatDecimal(score.formattingScore, 1, 1)}"></span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Suggestions -->
+  <div class="card" th:if="${not #lists.isEmpty(suggestions)}">
+    <h3>Suggestions</h3>
+    <div th:each="sug : ${suggestions}" class="suggestion-item">
+      <div>
+        <strong th:text="${sug.category.toUpperCase()}"></strong>
+        <span th:text="${' - ' + sug.priority.toUpperCase()}"></span>
+      </div>
+      <p th:text="${sug.message}"></p>
+      <div th:utext="${sug.remediationSteps.replace('\n', '<br>')}"></div>
+
+      <div class="career-box" th:if="${sug.category == 'CAREER_GROWTH' and sug.programName != null}">
+        <strong th:text="${sug.programName}"></strong><br>
+        <small>
+          <span th:text="${sug.duration or ''}"></span>
+          <span th:if="${sug.duration and sug.costRange}"> • </span>
+          <span th:text="${sug.costRange or ''}"></span>
+        </small><br>
+        <a th:if="$$   {sug.programUrl}" th:href="   $${sug.programUrl}" target="_blank" class="btn btn-primary" style="margin-top:8px;">
+          Apply / Learn More →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scoring Form -->
+  <div class="card">
+    <h3>Score Against a Job</h3>
+    <form th:action="@{/resume/{id}/score(id=${resume.id})}" method="post">
+      <div class="form-group">
+        <label for="jobTitle">Job Title</label>
+        <input type="text" id="jobTitle" name="jobTitle" placeholder="e.g. Full-Stack Java Developer">
+      </div>
+      <div class="form-group">
+        <label for="jobUrl">Job URL (optional)</label>
+        <input type="url" id="jobUrl" name="jobUrl" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label for="jobDescription">Job Description</label>
+        <textarea id="jobDescription" name="jobDescription" rows="6" placeholder="Paste full description..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Score Resume</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

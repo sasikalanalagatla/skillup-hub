@@ -2,7 +2,9 @@ package com.skillup.hub.controller;
 
 import com.skillup.hub.model.Resume;
 import com.skillup.hub.model.Score;
+import com.skillup.hub.model.Suggestion;
 import com.skillup.hub.model.User;
+import com.skillup.hub.repository.SuggestionRepository;
 import com.skillup.hub.repository.UserRepository;
 import com.skillup.hub.service.ResumeService;
 import com.skillup.hub.service.ScoreService;
@@ -14,7 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ public class ResumeController {
     private final ResumeService resumeService;
     private final UserRepository userRepository;
     private final ScoreService scoreService;
+    private final SuggestionRepository suggestionRepository;
 
     @GetMapping("/")
     public String index(Model model) {
@@ -64,17 +69,18 @@ public class ResumeController {
 
     @GetMapping("/resume/{id}")
     public String viewResume(@PathVariable String id, Model model) {
-        try {
-            Resume resume = resumeService.getResumeById(java.util.UUID.fromString(id));
-            Score latestScore = scoreService.getLatestScoreForResume(resume.getId());
+        Resume resume = resumeService.getResumeById(UUID.fromString(id));
+        Score score = scoreService.getLatestScoreForResume(resume.getId());
 
-            model.addAttribute("resume", resume);
-            model.addAttribute("score", latestScore);
-            return "resume-detail";
-        } catch (Exception e) {
-            model.addAttribute("error", "Resume not found");
-            return "redirect:/";
-        }
+        List<Suggestion> suggestions = (score != null)
+                ? suggestionRepository.findByScoreIdOrderByPriorityAsc(score.getId())
+                : Collections.emptyList();
+
+        model.addAttribute("resume", resume);
+        model.addAttribute("score", score);
+        model.addAttribute("suggestions", suggestions);
+
+        return "resume-detail";
     }
 
     @PostMapping("/resume/{id}/delete")
@@ -86,5 +92,21 @@ public class ResumeController {
             redirectAttributes.addFlashAttribute("error", "Failed to delete resume: " + e.getMessage());
         }
         return "redirect:/";
+    }
+
+    @GetMapping("/resume/{id}/suggestions")
+    public String viewSuggestions(@PathVariable String id, Model model) {
+        Resume resume = resumeService.getResumeById(UUID.fromString(id));
+        Score score = scoreService.getLatestScoreForResume(resume.getId());
+
+        List<Suggestion> suggestions = (score != null)
+                ? suggestionRepository.findByScoreIdOrderByPriorityAsc(score.getId())
+                : Collections.emptyList();
+
+        model.addAttribute("resume", resume);
+        model.addAttribute("score", score);
+        model.addAttribute("suggestions", suggestions);
+
+        return "suggestions";  // → templates/suggestions.html
     }
 }

@@ -355,12 +355,12 @@
       <div class="info-item">
         <div class="info-label">Privacy Level</div>
         <div class="info-value">
-              <span
-                      class="badge"
-                      th:classappend="${resume.privacyLevel == 'private' ? 'badge-private' : 'badge-public'}"
-                      th:text="${#strings.capitalize(resume.privacyLevel)}"
-              >Private</span
-              >
+            <span
+                    class="badge"
+                    th:classappend="${resume.privacyLevel == 'private' ? 'badge-private' : 'badge-public'}"
+                    th:text="${#strings.capitalize(resume.privacyLevel)}"
+            >Private</span
+            >
         </div>
       </div>
       <div class="info-item" th:if="${resume.user != null}">
@@ -468,21 +468,12 @@
     <h2>Resume Information</h2>
 
     <div class="actions">
-      <button
-              type="button"
-              class="btn btn-primary"
-              onclick="openJobModal()"
-      >
+      <a th:href="@{/job-score/{id}(id=${resume.id})}" class="btn btn-primary">
         🎯 Score Against Job
-      </button>
-      <button
-              type="button"
-              class="btn btn-primary"
-              onclick="openSuggestionsModal()"
-              th:if="${score != null}"
-      >
+      </a>
+      <a th:href="@{/resume/{id}/suggestions(id=${resume.id})}" class="btn btn-primary" th:if="${score != null}">
         📋 View Suggestions
-      </button>
+      </a>
       <form
               th:action="@{/resume/{id}/delete(id=${resume.id})}"
               method="post"
@@ -511,194 +502,101 @@
     <div class="extracted-text" th:text="${resume.parsedJson}">{}</div>
   </div>
 
-  <!-- Suggestions Modal -->
-  <div id="suggestionsModal" class="modal">
-    <div class="modal-content" style="max-width: 800px">
-      <span class="close" onclick="closeSuggestionsModal()">&times;</span>
-      <div class="modal-header">💡 Resume Improvement Suggestions</div>
-      <div id="suggestionsContainer">
-        <div style="text-align: center; padding: 40px; color: #999">
-          Loading suggestions...
+  <!-- Suggestions (rendered server-side) -->
+  <!-- Suggestions (rendered server-side) -->
+  <div class="card" th:if="${score != null and suggestions != null and not #lists.isEmpty(suggestions)}">
+    <h2>💡 Resume Improvement Suggestions</h2>
+    <div class="suggestions-list">
+      <!-- FIX 1: Use th:classappend for dynamic classes -->
+      <div class="suggestion-item" th:classappend="'priority-' + ${sug.priority}" th:each="sug : ${suggestions}">
+        <div class="suggestion-header">
+          <span class="suggestion-category" th:text="${sug.category.toUpperCase()}"></span>
+          <!-- FIX 2: Use th:classappend for priority color -->
+          <span class="suggestion-priority" th:classappend="${sug.priority}" th:text="${sug.priority.toUpperCase()}"></span>
+        </div>
+        <div class="suggestion-message" th:text="${sug.message}"></div>
+        <div class="suggestion-steps" th:text="${sug.remediationSteps}"></div>
+
+        <!-- Special handling for CAREER_GROWTH -->
+        <div class="mt-3 p-3 bg-light rounded border" th:if="${sug.category == 'CAREER_GROWTH' and sug.programName != null}">
+          <strong th:text="${sug.programName}"></strong><br>
+          <small class="text-muted">
+            <!-- FIX 3: Use Elvis operator (?:) instead of 'or' -->
+            <span th:text="${sug.duration ?: ''}"></span>
+
+            <!-- FIX 4: Explicit null checks. SpEL cannot 'and' two strings together as booleans -->
+            <span th:if="${sug.duration != null and sug.costRange != null}"> • </span>
+
+            <!-- FIX 5: Use Elvis operator (?:) -->
+            <span th:text="${sug.costRange ?: 'Cost not specified'}"></span>
+          </small><br>
+          <a th:if="${sug.programUrl}" th:href="${sug.programUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary mt-2">
+            Apply / Learn More →
+          </a>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Job Modal -->
-  <div id="jobModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeJobModal()">&times;</span>
-      <div class="modal-header">🎯 Score Against Job</div>
-      <form
-              th:action="@{/resume/{id}/score(id=${resume.id})}"
-              method="post"
-      >
-        <div class="form-group">
-          <label for="jobTitle">Job Title</label>
-          <input
-                  type="text"
-                  id="jobTitle"
-                  name="jobTitle"
-                  placeholder="e.g., Senior Java Developer, React Engineer"
-          />
-        </div>
-        <div style="text-align: center; color: #999; margin: 15px 0">
-          OR
-        </div>
-        <div class="form-group">
-          <label for="jobUrl">Job URL</label>
-          <input
-                  type="url"
-                  id="jobUrl"
-                  name="jobUrl"
-                  placeholder="https://example.com/jobs/123"
-          />
-        </div>
-        <div style="text-align: center; color: #999; margin: 15px 0">
-          OR
-        </div>
-        <div class="form-group">
-          <label for="jobDescription">Job Description (paste)</label>
-          <textarea
-                  id="jobDescription"
-                  name="jobDescription"
-                  rows="6"
-                  placeholder="Paste the job description here for more accurate role-specific scoring"
-                  style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #ddd;
-                  border-radius: 6px;
-                  font-size: 1rem;
-                  box-sizing: border-box;
-                "
-          ></textarea>
-        </div>
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 20px">
-          At least one field is required
-        </p>
-        <div class="modal-actions">
-          <button
-                  type="button"
-                  class="btn btn-cancel"
-                  onclick="closeJobModal()"
-          >
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">
-            Score Resume
-          </button>
-        </div>
-      </form>
-    </div>
+  <!-- Job Form (no modal, simple inline form) -->
+  <div class="card">
+    <h2>🎯 Score Against Job</h2>
+    <form
+            th:action="@{/resume/{id}/score(id=${resume.id})}"
+            method="post"
+    >
+      <div class="form-group">
+        <label for="jobTitle">Job Title</label>
+        <input
+                type="text"
+                id="jobTitle"
+                name="jobTitle"
+                placeholder="e.g., Senior Java Developer, React Engineer"
+        />
+      </div>
+      <div style="text-align: center; color: #999; margin: 15px 0">
+        OR
+      </div>
+      <div class="form-group">
+        <label for="jobUrl">Job URL</label>
+        <input
+                type="url"
+                id="jobUrl"
+                name="jobUrl"
+                placeholder="https://example.com/jobs/123"
+        />
+      </div>
+      <div style="text-align: center; color: #999; margin: 15px 0">
+        OR
+      </div>
+      <div class="form-group">
+        <label for="jobDescription">Job Description (paste)</label>
+        <textarea
+                id="jobDescription"
+                name="jobDescription"
+                rows="6"
+                placeholder="Paste the job description here for more accurate role-specific scoring"
+                style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              font-size: 1rem;
+              box-sizing: border-box;
+            "
+        ></textarea>
+      </div>
+      <p style="color: #999; font-size: 0.9rem; margin-bottom: 20px">
+        At least one field is required
+      </p>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">
+          Score Resume
+        </button>
+      </div>
+    </form>
   </div>
 
-  <script>
-    function openJobModal() {
-      document.getElementById("jobModal").classList.add("show");
-    }
-
-    function closeJobModal() {
-      document.getElementById("jobModal").classList.remove("show");
-    }
-
-    function openSuggestionsModal() {
-      const modal = document.getElementById("suggestionsModal");
-      modal.classList.add("show");
-      loadSuggestions();
-    }
-
-    function closeSuggestionsModal() {
-      document.getElementById("suggestionsModal").classList.remove("show");
-    }
-
-    function loadSuggestions() {
-      const scoreId = "[[${score?.id}]]";
-      console.log("Score ID:", scoreId);
-      if (!scoreId || scoreId === "") {
-        document.getElementById("suggestionsContainer").innerHTML =
-          '<div class="no-suggestions">No score found. Please score your resume first.</div>';
-        return;
-      }
-
-      const url = `/api/score/${scoreId}/suggestions`;
-      console.log("Fetching from:", url);
-
-      fetch(url)
-        .then((response) => {
-          console.log("Response status:", response.status);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((suggestions) => {
-          console.log("Suggestions received:", suggestions);
-          if (suggestions.length === 0) {
-            document.getElementById("suggestionsContainer").innerHTML =
-              '<div class="no-suggestions">No suggestions available yet. Try scoring your resume against a job.</div>';
-            return;
-          }
-
-          let html = '<div class="suggestions-list">';
-          suggestions.forEach((sug) => {
-            let extraContent = "";
-
-            // Special handling for CAREER_GROWTH category with program details
-            if (sug.category === "CAREER_GROWTH" && sug.programName) {
-              extraContent = `
-                <div class="mt-3 p-3 bg-light rounded border">
-                  <strong>${sug.programName}</strong><br>
-                  <small class="text-muted">
-                    ${sug.duration || ''}
-                    ${sug.duration && sug.costRange ? ' • ' : ''}
-                    ${sug.costRange || 'Cost not specified'}
-                  </small><br>
-                  ${sug.programUrl ? `
-                    <a href="${sug.programUrl}" target="_blank" rel="noopener noreferrer"
-                       class="btn btn-sm btn-primary mt-2">
-                      Apply / Learn More →
-                    </a>
-                  ` : ''}
-                </div>
-              `;
-            }
-
-            html += `
-              <div class="suggestion-item priority-${sug.priority}">
-                <div class="suggestion-header">
-                  <span class="suggestion-category">${sug.category.toUpperCase()}</span>
-                  <span class="suggestion-priority ${sug.priority}">${sug.priority.toUpperCase()}</span>
-                </div>
-                <div class="suggestion-message">${sug.message}</div>
-                <div class="suggestion-steps">${sug.remediationSteps}</div>
-                ${extraContent}
-              </div>
-            `;
-          });
-          html += "</div>";
-          document.getElementById("suggestionsContainer").innerHTML = html;
-        })
-        .catch((error) => {
-          console.error("Error loading suggestions:", error);
-          document.getElementById("suggestionsContainer").innerHTML =
-            '<div class="no-suggestions">Error loading suggestions: ' +
-            error.message +
-            ". Check browser console for details.</div>";
-        });
-    }
-
-    window.onclick = function (event) {
-      const jobModal = document.getElementById("jobModal");
-      const suggestionsModal = document.getElementById("suggestionsModal");
-      if (event.target === jobModal) {
-        jobModal.classList.remove("show");
-      }
-      if (event.target === suggestionsModal) {
-        suggestionsModal.classList.remove("show");
-      }
-    };
-  </script>
 </div>
 </body>
 </html>
