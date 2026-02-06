@@ -27,6 +27,12 @@ public class User {
 
     private String displayName;
 
+    private String passwordHash;
+
+    private boolean isGuest = true;
+
+    private int guestAttemptCount = 0;
+
     private Instant createdAt = Instant.now();
 
     private Instant lastLogin;

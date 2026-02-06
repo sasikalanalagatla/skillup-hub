@@ -4,31 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkillUp Hub - Resume Analyzer</title>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
+
         .container {
             max-width: 900px;
             margin: 0 auto;
         }
+
         .header {
             text-align: center;
             color: white;
             margin-bottom: 40px;
         }
+
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
         }
+
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
         }
+
         .card {
             background: white;
             border-radius: 12px;
@@ -36,33 +43,32 @@
             margin-bottom: 30px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
+
         .upload-form {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
+
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
+
         .form-group label {
             font-weight: 600;
             color: #333;
         }
+
         .form-group input[type="email"],
         .form-group select {
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s;
         }
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+
         .btn {
             padding: 12px 24px;
             border: none;
@@ -70,16 +76,13 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
         }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
+
         .resume-item {
             display: flex;
             justify-content: space-between;
@@ -89,25 +92,44 @@
             border-radius: 8px;
             margin-bottom: 10px;
         }
+
         .resume-info {
             flex: 1;
         }
+
         .resume-filename {
             font-weight: 600;
             color: #333;
         }
+
         .resume-date {
             color: #666;
             font-size: 0.9rem;
         }
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 0.9rem;
+
+        /* JS-based hiding */
+        .resume-item.hidden-resume {
+            display: none;
+        }
+
+        .load-more-btn {
+            background: #6c757d;
+            color: white;
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .load-more-btn:hover {
+            background: #5a6268;
         }
     </style>
 </head>
-<body>
 
+<body>
 <div class="container">
 
     <div class="header">
@@ -115,48 +137,84 @@
         <p>Upload your resume and get AI-powered insights & suggestions</p>
     </div>
 
+    <!-- Upload Form -->
     <div class="card">
         <form class="upload-form" th:action="@{/upload}" method="post" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="file">Upload Resume</label>
-                <input type="file" id="file" name="file" accept=".pdf,.doc,.docx" required onchange="updateFileName(this)">
-                <div style="color: #999; font-size: 0.9rem; margin-top: 5px;">Supports PDF, DOC, DOCX</div>
+                <label>Upload Resume</label>
+                <input type="file" name="file" accept=".pdf,.doc,.docx" required>
             </div>
 
             <div class="form-group">
-                <label for="email">Email (optional - for saving your resumes)</label>
-                <input type="email" id="email" name="email" placeholder="you@example.com">
+                <label>Email (optional)</label>
+                <input type="email" name="email" placeholder="you@example.com">
             </div>
 
             <div class="form-group">
-                <label for="privacyLevel">Privacy Level</label>
-                <select id="privacyLevel" name="privacyLevel">
-                    <option value="private" selected>Private (only you can see)</option>
-                    <option value="public">Public (anonymized, visible to others)</option>
+                <label>Privacy Level</label>
+                <select name="privacyLevel">
+                    <option value="private" selected>Private</option>
+                    <option value="public">Public</option>
                 </select>
             </div>
 
-            <button type="submit" class="btn btn-primary" id="uploadBtn">
+            <button type="submit" class="btn btn-primary">
                 Upload & Analyze Resume
             </button>
         </form>
     </div>
 
+    <!-- Recent Resumes -->
     <div class="card" th:if="${resumes != null and !resumes.isEmpty()}">
-        <h2 style="margin-bottom: 20px; color: #333;">Recent Resumes</h2>
+        <h2 style="margin-bottom: 20px;">Recent Resumes</h2>
+
         <div class="resumes-list">
-            <div class="resume-item" th:each="resume : ${resumes}">
+            <div class="resume-item"
+                 th:each="resume, iterStat : ${resumes}"
+                 th:classappend="${iterStat.index >= 5} ? 'hidden-resume'">
+
                 <div class="resume-info">
-                    <div class="resume-filename" th:text="${resume.filename}">resume.pdf</div>
-                    <div class="resume-date" th:text="${'Uploaded: ' + #temporals.format(resume.uploadAt, 'MMM dd, yyyy HH:mm')}">Jan 1, 2024</div>
+                    <div class="resume-filename" th:text="${resume.filename}"></div>
+                    <div class="resume-date"
+                         th:text="${'Uploaded: ' + #temporals.format(resume.uploadAt, 'MMM dd, yyyy HH:mm')}">
+                    </div>
                 </div>
-                <div>
-                    <a th:href="@{/resume/{id}(id=${resume.id})}" class="btn btn-primary btn-sm">View Details</a>
-                </div>
+
+                <a th:href="@{/resume/{id}(id=${resume.id})}" class="btn btn-primary btn-sm">
+                    View Details
+                </a>
             </div>
         </div>
+
+        <div style="text-align: center;" th:if="${resumes.size() > 5}">
+            <button id="loadMoreBtn" class="load-more-btn">
+                Show More ↓
+            </button>
+        </div>
     </div>
+
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+
+        if (!loadMoreBtn) return;
+
+        loadMoreBtn.addEventListener("click", () => {
+            const hiddenItems = document.querySelectorAll(".hidden-resume");
+            const showCount = Math.min(5, hiddenItems.length);
+
+            for (let i = 0; i < showCount; i++) {
+                hiddenItems[i].classList.remove("hidden-resume");
+            }
+
+            if (hiddenItems.length - showCount <= 0) {
+                loadMoreBtn.style.display = "none";
+            }
+        });
+    });
+</script>
 
 </body>
 </html>
