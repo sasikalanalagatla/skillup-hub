@@ -43,9 +43,7 @@ public class ResumeServiceImpl implements ResumeService {
         resume.setPrivacyLevel(privacyLevel != null ? privacyLevel : "private");
         resume.setUploadAt(Instant.now());
 
-        Resume savedResume = resumeRepository.save(resume);
-
-        return savedResume;
+        return resumeRepository.save(resume);
     }
 
     @Override
@@ -57,11 +55,6 @@ public class ResumeServiceImpl implements ResumeService {
     public Resume getResumeById(UUID id) {
         return resumeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Resume not found: " + id));
-    }
-
-    @Override
-    public List<Resume> getAllActiveResumes() {
-        return resumeRepository.findByDeletedAtIsNullOrderByUploadAtDesc();
     }
 
     @Override

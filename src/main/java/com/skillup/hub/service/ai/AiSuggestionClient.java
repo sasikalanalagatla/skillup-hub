@@ -49,7 +49,8 @@ public class AiSuggestionClient {
         }
         try {
             String prompt = buildPrompt(resumeText, jobInfo, scoreDetails);
-            String systemPrompt = "You are a career coach providing actionable resume improvement suggestions. Return strict JSON.";
+            String systemPrompt = "You are a career coach providing actionable resume improvement suggestions." +
+                    " Return strict JSON.";
             String body = mapper.writeValueAsString(Map.of(
                     "contents", new Object[] {
                             Map.of("parts", new Object[] {
@@ -92,7 +93,6 @@ public class AiSuggestionClient {
                 return Collections.emptyList();
             }
 
-            @SuppressWarnings("unchecked")
             List<Map<String, Object>> suggestionMaps = (List<Map<String, Object>>) suggestionsObj;
 
             List<SuggestionItem> suggestions = new ArrayList<>();
@@ -102,11 +102,8 @@ public class AiSuggestionClient {
                 item.setMessage(getString(sMap, "message", ""));
                 item.setPriority(getString(sMap, "priority", "medium"));
                 
-                // Handle complex remediationSteps
                 Object remStepsObj = sMap.get("remediationSteps");
                 if (remStepsObj instanceof Map) {
-                    // If AI nested the details, extract them
-                    @SuppressWarnings("unchecked")
                     Map<String, Object> remMap = (Map<String, Object>) remStepsObj;
                     
                     if (sMap.get("programName") == null) item.setProgramName(getString(remMap, "programName", null));
@@ -115,13 +112,11 @@ public class AiSuggestionClient {
                     if (sMap.get("costRange") == null) item.setCostRange(getString(remMap, "costRange", null));
                     if (sMap.get("recommendationType") == null) item.setRecommendationType(getString(remMap, "recommendationType", null));
                     
-                    // Try to find a text message inside the nested object
                     String nestedMsg = getString(remMap, "message", null);
                     if (nestedMsg == null) nestedMsg = getString(remMap, "text", null);
                     if (nestedMsg == null) nestedMsg = getString(remMap, "steps", "");
                     item.setRemediationSteps(nestedMsg);
                 } else if (remStepsObj instanceof List) {
-                    // If it's a list of strings, join them
                     List<?> list = (List<?>) remStepsObj;
                     String joined = list.stream().map(String::valueOf).collect(Collectors.joining("\n- "));
                     item.setRemediationSteps("- " + joined);
@@ -129,7 +124,6 @@ public class AiSuggestionClient {
                     item.setRemediationSteps(getString(sMap, "remediationSteps", ""));
                 }
 
-                // Standard extraction for top-level fields (overwrites if present)
                 if (sMap.containsKey("recommendationType")) item.setRecommendationType(getString(sMap, "recommendationType", null));
                 if (sMap.containsKey("programName")) item.setProgramName(getString(sMap, "programName", null));
                 if (sMap.containsKey("programUrl")) item.setProgramUrl(getString(sMap, "programUrl", null));
@@ -196,7 +190,6 @@ public class AiSuggestionClient {
         if (start >= 0 && end > start) {
             return content.substring(start, end + 1);
         }
-        // Fallback empty response
         return "{\"suggestions\":[]}";
     }
 

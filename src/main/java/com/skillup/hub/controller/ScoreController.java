@@ -41,7 +41,6 @@ public class ScoreController {
                 return "redirect:/resume/" + resumeId;
             }
 
-            // Score against job info
             Score score = scoreService.scoreResume(UUID.fromString(resumeId), null, jobInfo);
 
             redirectAttributes.addFlashAttribute("message",
@@ -74,6 +73,6 @@ public class ScoreController {
         model.addAttribute("score", score);
         model.addAttribute("suggestions", suggestions);
 
-        return "job-score";  // → templates/job-score.html
+        return "job-score";
     }
 }

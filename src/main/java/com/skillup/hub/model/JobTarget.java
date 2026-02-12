@@ -24,7 +24,7 @@ public class JobTarget {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private String source; // url | manual | search
+    private String source;
 
     private String title;
 

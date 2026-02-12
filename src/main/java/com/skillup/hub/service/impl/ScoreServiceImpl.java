@@ -40,12 +40,11 @@ public class ScoreServiceImpl implements ScoreService {
             throw new IllegalArgumentException("Resume has no extracted text");
         }
 
-        // Try AI-based scoring first, fallback to basic heuristics
-        Double overallScore;
-        Double skillsScore;
-        Double experienceScore;
-        Double keywordsScore;
-        Double formattingScore;
+        double overallScore;
+        double skillsScore;
+        double experienceScore;
+        double keywordsScore;
+        double formattingScore;
         String details;
         String engineVersionUsed;
 
@@ -56,14 +55,12 @@ public class ScoreServiceImpl implements ScoreService {
             experienceScore = safeBound(r.getExperience());
             keywordsScore = safeBound(r.getKeywords());
             formattingScore = safeBound(r.getFormatting());
-            // If overall missing, compute weighted
             overallScore = r.getOverall() != null && r.getOverall() > 0
                     ? safeBound(r.getOverall())
                     : computeOverall(skillsScore, experienceScore, keywordsScore, formattingScore);
             details = r.detailsAsJson(new com.fasterxml.jackson.databind.ObjectMapper());
             engineVersionUsed = ENGINE_VERSION_AI;
         } else {
-            // AI disabled or failed: use basic heuristic scoring
             skillsScore = calculateBasicSkillsScore(resumeText, jobInfo);
             experienceScore = calculateBasicExperienceScore(resumeText);
             keywordsScore = calculateBasicKeywordsScore(resumeText);
@@ -77,7 +74,6 @@ public class ScoreServiceImpl implements ScoreService {
             engineVersionUsed = ENGINE_VERSION_BASIC;
         }
 
-        // Create and save score
         Score score = new Score();
         score.setResume(resume);
         score.setOverallScore(overallScore);
@@ -88,20 +84,9 @@ public class ScoreServiceImpl implements ScoreService {
         score.setEngineVersion(engineVersionUsed);
         score.setDetails(details);
         score.setCreatedAt(Instant.now());
-
         Score savedScore = scoreRepository.save(score);
-
-        // Generate and persist suggestions (AI-only)
         generateAndSaveSuggestions(savedScore, resumeText, jobInfo, aiResultOpt);
-
-
         return savedScore;
-    }
-
-    @Override
-    public Score getScoreById(UUID scoreId) {
-        return scoreRepository.findById(scoreId)
-                .orElseThrow(() -> new IllegalArgumentException("Score not found: " + scoreId));
     }
 
     private double computeOverall(double skillsScore, double experienceScore, double keywordsScore,
@@ -155,17 +140,15 @@ public class ScoreServiceImpl implements ScoreService {
             suggestion.setMessage(item.getMessage());
             suggestion.setPriority(item.getPriority());
             suggestion.setRemediationSteps(item.getRemediationSteps());
-            suggestion.setRecommendationType(item.getRecommendationType());   // e.g. "INTERNSHIP", "BOOTCAMP"
-            suggestion.setProgramName(item.getProgramName());                // e.g. "Scaler Academy"
-            suggestion.setProgramUrl(item.getProgramUrl());                  // e.g. "https://scaler.com/..."
-            suggestion.setDuration(item.getDuration());                      // e.g. "6-9 months"
+            suggestion.setRecommendationType(item.getRecommendationType());
+            suggestion.setProgramName(item.getProgramName());
+            suggestion.setProgramUrl(item.getProgramUrl());
+            suggestion.setDuration(item.getDuration());
             suggestion.setCostRange(item.getCostRange());
             toSave.add(suggestion);
         }
 
-        if (!toSave.isEmpty()) {
-            suggestionRepository.saveAll(toSave);
-        }
+        suggestionRepository.saveAll(toSave);
     }
 
     private double calculateBasicSkillsScore(String resumeText, String jobInfo) {
@@ -177,7 +160,7 @@ public class ScoreServiceImpl implements ScoreService {
                 tokens.add(t);
         }
         if (tokens.isEmpty())
-            return 55.0; // neutral baseline
+            return 55.0;
         int hits = 0;
         for (String t : tokens) {
             if (resumeLower.contains(t))

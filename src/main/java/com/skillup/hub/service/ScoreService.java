@@ -8,7 +8,5 @@ import java.util.UUID;
 public interface ScoreService {
     Score scoreResume(UUID resumeId, UUID jobTargetId, String jobInfo) throws JsonProcessingException;
 
-    Score getScoreById(UUID scoreId);
-
     Score getLatestScoreForResume(UUID resumeId);
 }

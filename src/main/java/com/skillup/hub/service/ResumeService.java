@@ -18,7 +18,5 @@ public interface ResumeService {
 
     Resume getResumeById(UUID id);
 
-    List<Resume> getAllActiveResumes();
-
     void deleteResume(UUID id) throws JsonProcessingException;
 }

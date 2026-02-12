@@ -28,7 +28,7 @@ public class JobSkill {
     @JoinColumn(name = "skill_id")
     private Skill skill;
 
-    private String importance; // req | pref
+    private String importance;
 
     private Double weight;
 }

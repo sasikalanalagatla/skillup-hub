@@ -57,9 +57,7 @@ public class AiScoringClient {
                     },
                     "generationConfig", Map.of("temperature", 0)));
 
-// ✅ working for text-bison
             String url = baseUrl + "/v1beta/models/" + model + ":generateContent?key=" + apiKey;
-// instead of /v1beta/
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(Duration.ofSeconds(30))
@@ -75,7 +73,6 @@ public class AiScoringClient {
                 return Optional.empty();
             }
 
-            // Extract Gemini response content
             JsonNode root = mapper.readTree(response.body());
             JsonNode contentNode = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
             if (contentNode.isMissingNode() || contentNode.isNull()) {
@@ -84,7 +81,6 @@ public class AiScoringClient {
             }
 
             String content = contentNode.asText();
-            // Try to locate a JSON object in the content
             String json = extractJson(content);
             Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
             });
@@ -97,7 +93,6 @@ public class AiScoringClient {
             result.setFormatting(asDouble(map.get("formatting")));
             Object details = map.get("details");
             if (details instanceof Map) {
-                // noinspection unchecked
                 result.setDetails((Map<String, Object>) details);
             } else {
                 Map<String, Object> fallback = new HashMap<>();
@@ -125,7 +120,6 @@ public class AiScoringClient {
 
     private String buildPrompt(String resumeText, String jobInfo) {
         String jobSection = "JOB INFO:\n" + safeTruncate(jobInfo, 6000);
-// in buildPrompt()
         String resumeSection = "RESUME TEXT (first 8000 chars):\n" + safeTruncate(resumeText, 8000);
         return "You will score how well a resume matches a job.\n" +
                 "Return ONLY a compact JSON object with keys: overall, skills, experience, keywords, formatting, details.\n"
@@ -149,7 +143,6 @@ public class AiScoringClient {
         if (start >= 0 && end > start) {
             return content.substring(start, end + 1);
         }
-        // If not found, wrap as minimal JSON
         Map<String, Object> fallback = new HashMap<>();
         fallback.put("overall", 0);
         fallback.put("skills", 0);
